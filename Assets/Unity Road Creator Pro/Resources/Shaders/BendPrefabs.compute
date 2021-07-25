@@ -1,0 +1,176 @@
+﻿#pragma kernel CSMain
+
+struct Vertex
+{
+	float3 position;
+	float3 localPosition;
+};
+
+RWStructuredBuffer<Vertex> vertices;
+RWStructuredBuffer<Vertex> lastRightVertices;
+AppendStructuredBuffer<Vertex> currentRightVertices;
+
+// Offsets
+float startOffset;
+float endOffset;
+
+float minX;
+float maxX;
+float3 objectPosition;
+float4 objectRotation;
+float3 objectScale;
+bool bendToCurve;
+bool fillGap;
+bool first;
+
+// For adaption to curve
+float startTime;
+float endTime;
+StructuredBuffer<float3> startPoints;
+StructuredBuffer<float3> startTangents;
+StructuredBuffer<float3> endPoints;
+StructuredBuffer<float3> endTangents;
+
+// 0:Left 1:Right 2:Forwards 3:Backwards
+int rotationIndex;
+
+uint size;
+uint stride;
+
+// Rotation functions
+static float4 qmul(float4 q1, float4 q2)
+{
+	return float4(
+		q2.xyz * q1.w + q1.xyz * q2.w + cross(q1.xyz, q2.xyz),
+		q1.w * q2.w - dot(q1.xyz, q2.xyz)
+	);
+}
+
+static float3 rotate_vector(float4 r, float3 v) {
+	float4 r_c = r * float4(-1, -1, -1, 1);
+	return qmul(r, qmul(float4(v, 0), r_c)).xyz;
+}
+
+float4 q_conj(float4 q)
+{
+	return float4(-q.x, -q.y, -q.z, q.w);
+}
+
+static float4 q_inverse(float4 q)
+{
+	float4 conj = q_conj(q);
+	return conj / (q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w);
+}
+
+static float3 lerp4(float t, int index) {
+	float3 position = endPoints[index];
+	if (t != 1) { // Prevent everything becoming zero
+		position = (1 - t) * (1 - t) * (1 - t) * startPoints[index] + 3 * t * (1 - t) * (1 - t) * startTangents[index] + 3 * t * t * (1 - t) * endTangents[index] + t * t * t * endPoints[index];
+	}
+
+	return position;
+}
+
+[numthreads(64, 1, 1)]
+void CSMain(uint3 threadId : SV_GroupThreadID, uint3 groupId : SV_GroupID)
+{
+	int i = threadId.x + groupId.x * 64;
+	float tolerance = 0.008f;
+
+	if (bendToCurve) {
+		float localX = vertices[i].position.x;
+		if (rotationIndex == 2 || rotationIndex == 3) {
+			localX = vertices[i].position.z;
+		}
+
+		float progress = (localX - minX) / (maxX - minX);
+		// Flip direction if right or backwards
+		if (rotationIndex == 1 || rotationIndex == 3) {
+			progress = 1 - progress;
+		}
+
+		float offset = startOffset + progress * (endOffset - startOffset);
+		float t = startTime + progress * (endTime - startTime);
+		uint pointCount;
+		uint tmp;
+		endPoints.GetDimensions(pointCount, tmp);
+		int index = min((int)t, pointCount - 1);
+		t -= index;
+
+		// Lerp4
+		float3 position = lerp4(t, index);
+
+		// Offset
+		t += 0.01f;
+		float3 forward = (lerp4(t, index)) - position;
+		float3 left = normalize(float3(-forward.z, 0, forward.x));
+		position += left * offset;
+		float3 newPosition = position - objectPosition;
+
+		// Normalize forward
+		forward.y = 0;
+		forward = normalize(forward);
+
+		// Bend them left relative to curve, not to object
+		if (rotationIndex == 0) {
+			newPosition += left * vertices[i].localPosition.z * objectScale.z;
+		}
+		else if (rotationIndex == 1) {
+			newPosition -= left * vertices[i].localPosition.z * objectScale.z;
+		}
+		else if (rotationIndex == 2) {
+			newPosition -= left * vertices[i].localPosition.x * objectScale.x;
+		}
+		else if (rotationIndex == 3) {
+			newPosition += left * vertices[i].localPosition.x * objectScale.x;
+		}
+
+		// Rotation
+		newPosition = rotate_vector(objectRotation, newPosition);
+
+		// Scale
+		newPosition.x /= objectScale.x;
+		newPosition.y /= objectScale.y;
+		newPosition.z /= objectScale.z;
+
+		// Apply
+		vertices[i].position = newPosition + float3(0, vertices[i].position.y, 0);
+	}
+	else if (fillGap) {
+		// Fill gap
+		lastRightVertices.GetDimensions(size, stride);
+
+		if (((rotationIndex == 0 && abs(vertices[i].localPosition.x - minX) < tolerance) || (rotationIndex == 1 && abs(vertices[i].localPosition.x - maxX) < tolerance) || (rotationIndex == 2 && abs(vertices[i].localPosition.z - minX) < tolerance) || (rotationIndex == 3 && abs(vertices[i].localPosition.z - maxX) < tolerance)) && !first) {
+			float3 nearestPosition;
+
+			// Find nearest vertex
+			for (int j = 0; j < (int)size; j++) {
+				if (((rotationIndex == 0 || rotationIndex == 1) && lastRightVertices[j].localPosition.x != 0) || ((rotationIndex == 2 || rotationIndex == 3) && lastRightVertices[j].localPosition.z != 0)) {
+					if (abs(lastRightVertices[j].localPosition.y - vertices[i].localPosition.y) < tolerance && (((rotationIndex == 0 || rotationIndex == 1) && abs(lastRightVertices[j].localPosition.z - vertices[i].localPosition.z) < tolerance) || ((rotationIndex == 2 || rotationIndex == 3) && abs(lastRightVertices[j].localPosition.x - vertices[i].localPosition.x) < tolerance))) {
+						nearestPosition = lastRightVertices[j].position;
+						break;
+					}
+				}
+			}
+
+			// Move vertex
+			float3 position = rotate_vector(objectRotation, nearestPosition - objectPosition);
+			position.x /= objectScale.x;
+			position.y /= objectScale.y;
+			position.z /= objectScale.z;
+			vertices[i].position = position;
+		}
+		else if ((rotationIndex == 0 && abs(vertices[i].localPosition.x - maxX) < tolerance) || (rotationIndex == 1 && abs(vertices[i].localPosition.x - minX) < tolerance) || (rotationIndex == 2 && abs(vertices[i].localPosition.z - maxX) < tolerance) || (rotationIndex == 3 && abs(vertices[i].localPosition.z - minX) < tolerance)) {
+			// Save vertex
+			float3 position = vertices[i].position;
+			position.x *= objectScale.x;
+			position.y *= objectScale.y;
+			position.z *= objectScale.z;
+
+			Vertex vertex;
+			vertex.position = rotate_vector(q_inverse(objectRotation), position) + objectPosition;
+			vertex.localPosition = vertices[i].localPosition;
+			currentRightVertices.Append(vertex);
+		}
+	}
+}

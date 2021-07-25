@@ -1,0 +1,24 @@
+﻿#pragma kernel CSMain
+
+// Input
+StructuredBuffer<float3> treePositions;
+float3 position;
+float size;
+
+// Output
+AppendStructuredBuffer<float3> removedTreePositions;
+
+[numthreads(64, 1, 1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    int maxI = 0;// max(0, treePositions.Length - 1 - id.x * 128);
+    for (int i = treePositions.Length - 1 - id.x * 64; i >= maxI; i--) {
+        float distanceX = abs(treePositions[i].x - position.x);
+        float distanceZ = abs(treePositions[i].z - position.z);
+
+        if (distanceX <= size && distanceZ <= size) {
+            // Remove tree
+            removedTreePositions.Append(treePositions[i]);
+        }
+    }
+}

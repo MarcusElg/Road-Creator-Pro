@@ -1,0 +1,60 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff76e7b103298b34885db96a734fa7ed, type: 3}
+  m_Name: RoadCreatorSettings
+  m_EditorClassIdentifier: 
+  sceneViewMenu: 3
+  showSceneViewMenuForAllObjects: 0
+  anchorPointSize: 1.5
+  controlPointSize: 1.5
+  intersectionCurvePointSize: 0.3
+  selectedObjectArrowSize: 4.5
+  pointShape: 0
+  scalePointsWhenZoomed: 0
+  exposeCurveKeysToEditor: 1
+  prefabExportLocation: Assets/
+  roadOptionsIconSize: 40
+  roadGuidelinesLength: 10
+  roadGuidelinesRenderDistance: 60
+  roadGuidelinesSnapDistance: 0.5
+  defaultLaneMaterials:
+  - {fileID: 2100000, guid: 30133f0e1aa3bc34da1d3737c0c11c0f, type: 2}
+  - {fileID: 2100000, guid: c103f91898f8dd84db65a9711b1d5c0a, type: 2}
+  defaultIntersectionMaterials:
+  - {fileID: 2100000, guid: 30133f0e1aa3bc34da1d3737c0c11c0f, type: 2}
+  - {fileID: 2100000, guid: ad827e855daee674aa2f54e2d2740e9e, type: 2}
+  defaultIntersectionMainRoadMaterial: {fileID: 2100000, guid: b462e240518c67e4ea0b9e2b4e572758,
+    type: 2}
+  defaultStartPrefab: {fileID: 0}
+  defaultMainPrefab: {fileID: 1020590986053654, guid: deae0e19fa25e294c999c171565a6332,
+    type: 3}
+  defaultEndPrefab: {fileID: 0}
+  leftTurnMarking: {fileID: 1481946580986650, guid: cf4f75ccc47f16d4780af776f590fb38,
+    type: 3}
+  forwardTurnMarking: {fileID: 1481946580986650, guid: c7f84b6d7c4fd644d87b06bcf6386659,
+    type: 3}
+  rightTurnMarking: {fileID: 1481946580986650, guid: bac0a6734a5a0d34bac40384d350aa08,
+    type: 3}
+  leftForwardTurnMarking: {fileID: 1481946580986650, guid: 67474430d9cfe2045b383706db9a28cd,
+    type: 3}
+  rightForwardTurnMarking: {fileID: 1481946580986650, guid: 0a34642132443da41b100bcf7df051a8,
+    type: 3}
+  leftRightTurnMarking: {fileID: 7515640615166865401, guid: 2720e78ebfa35d94999a8701733d5fcf,
+    type: 3}
+  leftRightForwardTurnMarking: {fileID: 1481946580986650, guid: 5e7df8019b18f894ab9bb26afd2fc83e,
+    type: 3}
+  anchorPointColour: {r: 1, g: 0, b: 0, a: 0.5}
+  selectedAnchorPointColour: {r: 0.75, g: 0, b: 0, a: 0.5}
+  controlPointColour: {r: 1, g: 1, b: 0, a: 0.5}
+  roadGuidelinesColour: {r: 0, g: 0.4, b: 0, a: 1}
+  selectedObjectColour: {r: 0, g: 0, b: 1, a: 0.5}
+  intersectionCreationSelectionColour: {r: 0, g: 1, b: 1, a: 0.5}

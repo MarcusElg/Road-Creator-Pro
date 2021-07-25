@@ -1,0 +1,32 @@
+#pragma kernel CSMain
+
+// Input
+StructuredBuffer<int2> positions;
+StructuredBuffer<float> heights;
+int terrainSize;
+int smoothRadius;
+float smoothingAmount;
+
+// Output
+RWStructuredBuffer<float> resultHeights;
+
+[numthreads(64, 1, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+	int2 position = positions[id.x];
+	int count = 0;
+	float totalHeight = 0;
+
+	for (int x = position.x - smoothRadius; x <= position.x + smoothRadius; x++) {
+		for (int y = position.y - smoothRadius; y <= position.y + smoothRadius; y++) {
+			if (x < 0 || y < 0 || x >= terrainSize || y >= terrainSize) {
+				continue;
+			}
+
+			totalHeight += heights[y * terrainSize + x];
+			count++;
+		}
+	}
+
+	resultHeights[id.x] = lerp(heights[position.y * terrainSize + position.x], totalHeight / count, smoothingAmount);
+}

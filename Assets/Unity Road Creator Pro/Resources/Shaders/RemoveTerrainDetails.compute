@@ -1,0 +1,37 @@
+﻿#pragma kernel CSMain
+
+// Input
+int2 position;
+int sizeX;
+int sizeZ;
+int textureSize;
+float2 forward;
+float2 left;
+
+// Output
+AppendStructuredBuffer<int2> positions;
+
+[numthreads(64, 1, 1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    int offsetX = (float)id.x % 64;
+    int offsetY = id.x / 64;    
+    int offset = offsetX * sizeX + offsetY;
+
+    for (int x = -sizeX + offsetX; x < sizeX; x++) {
+        for (int y = -sizeZ + offsetY; y < sizeZ; y++) {
+            int2 gridPosition = position + left * x + forward * y;
+            int xy = x * sizeX + y;
+
+            if (xy > offset * 2) {
+                return;
+            }
+
+            if (gridPosition.x < 0 || gridPosition.y < 0 || gridPosition.x > textureSize - 1 || gridPosition.y > textureSize - 1) {
+                continue;
+            }
+
+            positions.Append(gridPosition);
+        }
+    }
+}

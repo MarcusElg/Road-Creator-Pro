@@ -1,0 +1,21 @@
+﻿Library
+Temp
+obj
+Logs
+Packages
+
+UserSettings
+UnityEditor.UI.csproj
+UnityEngine.UI.csproj
+ProjectSettings
+.vscode
+.vsconfig
+Assets/Editor
+Assets/Scene.unity
+Assets/Scene.unity.meta
+Assets/SceneSettings.lighting
+Assets/SceneSettings.lighting.meta
+.vs/Road Creator Pro/v16
+Assembly-CSharp.csproj
+Assembly-CSharp-Editor.csproj
+Road Creator Pro.sln
